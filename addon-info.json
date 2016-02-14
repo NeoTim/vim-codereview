@@ -1,0 +1,9 @@
+{
+  "name": "codereview",
+  "description": "Plugin for managing local/remote branches and pull reqs",
+  "author": "Google",
+  "repository": {"type": "git", "url": "git://github.com/google/vim-codereview"},
+  "dependencies": {
+    "maktaba": {"type": "git", "url": "git://github.com/google/vim-maktaba"}
+  }
+}

@@ -1,0 +1,182 @@
+[
+  {
+    "url": "https://api.github.com/repos/google/vim-maktaba/pulls/comments/34420595",
+    "id": 34420595,
+    "diff_hunk": "@@ -0,0 +1,120 @@\n+Maktaba provides some simple functions to parse and format Vim values to JSON\n+texts. These can parse and format numbers, strings, lists and dictionaries to\n+their JSON equivalents.\n+\n+Currently, these functions depend upon access to Python, either via a version\n+of Vim compiled with +python (or +python3), or by shelling out to the Python\n+binary.\n+\n+As always, we start by installing Maktaba.\n+\n+  :set nocompatible\n+  :let g:maktabadir = fnamemodify($VROOMFILE, ':p:h:h')\n+  :let g:bootstrapfile = g:maktabadir . '/bootstrap.vim'\n+  :execute 'source' g:bootstrapfile\n+\n+\n+\n+We can start by formatting a variety of Vim values as JSON. Any Vim value other\n+than a Funcref can be formatted as a JSON text.\n+\n+  :function CheckEqual(a, b) abort\n+  :  return maktaba#ensure#IsEqual(a:b, a:a)\n+  :endfunction\n+\n+  :call CheckEqual(maktaba#json#Format('Hello, world'), '\"Hello, world\"')\n+  :call CheckEqual(maktaba#json#Format(42), '42')\n+  :call CheckEqual(maktaba#json#Format(42.0), '42.0')\n+  :call CheckEqual(maktaba#json#Format([1, 2, 'foo']), '[1, 2, \"foo\"]')\n+  :let g:json = maktaba#json#Format({'foo': {'bar': 'baz'}})\n+  :call CheckEqual('{\"foo\": {\"bar\": \"baz\"}}', g:json)",
+    "path": "vroom/json.vroom",
+    "position": null,
+    "original_position": 30,
+    "commit_id": "5a458ed46a1aeae398e7b0c3b00686f7a6f7f8da",
+    "original_commit_id": "7eec0c582b1007d8399374b7d6fa88e79ee411dc",
+    "user": {
+      "login": "malcolmr",
+      "id": 7025783,
+      "avatar_url": "https://avatars.githubusercontent.com/u/7025783?v=3",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/malcolmr",
+      "html_url": "https://github.com/malcolmr",
+      "followers_url": "https://api.github.com/users/malcolmr/followers",
+      "following_url": "https://api.github.com/users/malcolmr/following{/other_user}",
+      "gists_url": "https://api.github.com/users/malcolmr/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/malcolmr/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/malcolmr/subscriptions",
+      "organizations_url": "https://api.github.com/users/malcolmr/orgs",
+      "repos_url": "https://api.github.com/users/malcolmr/repos",
+      "events_url": "https://api.github.com/users/malcolmr/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/malcolmr/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "body": "nit: you're using (actual, expected) elsewhere, but (expected, actual) here.",
+    "created_at": "2015-07-12T10:47:29Z",
+    "updated_at": "2015-07-12T15:28:43Z",
+    "html_url": "https://github.com/google/vim-maktaba/pull/151#discussion_r34420595",
+    "pull_request_url": "https://api.github.com/repos/google/vim-maktaba/pulls/151",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/google/vim-maktaba/pulls/comments/34420595"
+      },
+      "html": {
+        "href": "https://github.com/google/vim-maktaba/pull/151#discussion_r34420595"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/google/vim-maktaba/pulls/151"
+      }
+    }
+  },
+  {
+    "url": "https://api.github.com/repos/google/vim-maktaba/pulls/comments/34420616",
+    "id": 34420616,
+    "diff_hunk": "@@ -0,0 +1,211 @@\n+\" Sentinel constants used to serialize/deserialize JSON primitives.\n+if !exists('maktaba#json#NULL')\n+  let maktaba#json#NULL = {'__json__': 'null'}\n+  let s:NULL = maktaba#json#NULL\n+  let maktaba#json#TRUE = {'__json__': 'true'}\n+  let s:TRUE = maktaba#json#TRUE\n+  let maktaba#json#FALSE = {'__json__': 'false'}\n+  let s:FALSE = maktaba#json#FALSE\n+  lockvar! maktaba#json#NULL maktaba#json#TRUE maktaba#json#FALSE\n+endif\n+\n+function! s:Ellipsize(str, limit) abort\n+  return len(a:str) > a:limit ? a:str[ : a:limit - 4] . '...' : a:str\n+endfunction\n+\n+function! s:FormatKeyAndValue(key, value) abort\n+  if maktaba#value#IsString(a:key)\n+    return printf('\"%s\": %s', a:key, maktaba#json#Format(a:value))\n+  endif\n+  throw maktaba#error#BadValue(\n+      \\ 'Non-string keys not allowed for JSON dicts: %s.', string(a:key))\n+endfunction\n+\n+\"\"\n+\" Formats {value} as a JSON text.\n+\" {value} may be any Vim value other than a Funcref or non-finite Float (or a\n+\" Dictionary or List containing either).\n+\" @throws BadValue if the input cannot be represented as JSON.\n+function! maktaba#json#Format(value) abort\n+  if a:value is s:NULL\n+    return 'null'\n+  elseif a:value is s:TRUE\n+    return 'true'\n+  elseif a:value is s:FALSE\n+    return 'false'\n+  elseif maktaba#value#IsNumeric(a:value)\n+    let l:json = string(a:value)\n+    if index(['nan', 'inf', '-nan', '-inf'], l:json) != -1\n+      throw maktaba#error#BadValue(\n+          \\ 'Value cannot be represented as JSON: %s', l:json)\n+    endif\n+    return l:json\n+  elseif maktaba#value#IsString(a:value)\n+    let l:escaped = substitute(escape(a:value, '\"\\'), \"\\n\", '\\\\n', 'g')\n+    let l:escaped = substitute(l:escaped, \"\\t\", '\\\\t', 'g')\n+    \" TODO(dbarnett): Escape other special characters.\n+    return '\"' . l:escaped . '\"'\n+  elseif maktaba#value#IsList(a:value)\n+    let l:json_items = map(copy(a:value), 'maktaba#json#Format(v:val)')\n+    return '[' . join(l:json_items, ', ') . ']'\n+  elseif maktaba#value#IsDict(a:value)\n+    if maktaba#value#IsCallable(a:value)\n+      throw maktaba#error#BadValue(\n+          \\ 'Funcdict for func %s cannot be represented as JSON.',\n+          \\ string(a:value.func))\n+    endif\n+    let l:json_items =\n+        \\ map(items(a:value), 's:FormatKeyAndValue(v:val[0], v:val[1])')\n+    return '{' . join(l:json_items, ', ') . '}'\n+  endif\n+  throw maktaba#error#BadValue(a:value)\n+endfunction\n+\n+function! s:Consume(str, count) abort\n+  return maktaba#string#StripLeading(a:str[a:count : ])\n+endfunction\n+\n+function! s:ParsePartial(json, custom_values) abort\n+  \" null, true, or false\n+  if a:json =~# '\\m^null\\>'\n+    let l:value = get(a:custom_values, 'null', s:NULL)\n+    return [l:value, s:Consume(a:json, 4)]\n+  endif\n+  if a:json =~# '\\m^true\\>'\n+    let l:value = get(a:custom_values, 'true', s:TRUE)\n+    return [l:value, s:Consume(a:json, 4)]\n+  endif\n+  if a:json =~# '\\m^false\\>'\n+    let l:value = get(a:custom_values, 'false', s:FALSE)\n+    return [l:value, s:Consume(a:json, 5)]\n+  endif\n+  \" Number\n+  \" TODO(dbarnett): Handle scientific notation.\n+  let l:num_match = matchstr(a:json, '\\v^-?[0-9]+(\\.[0-9]+)?>')\n+  if !empty(l:num_match)\n+    return [eval(l:num_match), s:Consume(a:json, len(l:num_match))]\n+  endif\n+  \" String\n+  let l:str_match = matchstr(a:json, '\\v^\"([^\\\\\"]|\\\\.)*\"')\n+  if !empty(l:str_match)\n+    \" JSON strings use the same syntax as JSON strings.\n+    \" TODO(dbarnett): Handle special escape sequences like \\uxxxx.\n+    let l:value = eval(l:str_match)\n+    return [l:value, s:Consume(a:json, len(l:str_match))]\n+  endif\n+  \" First character if any, empty string otherwise.\n+  let l:first_char = a:json[0:0]\n+  \" List\n+  if l:first_char is# '['\n+    let [l:items, l:remaining] = s:ParseListPartial(a:json, a:custom_values)\n+    return [l:items, l:remaining]\n+  endif\n+  \" Dict\n+  if l:first_char is# '{'\n+    let [l:dict, l:remaining] = s:ParseDictPartial(a:json, a:custom_values)\n+    return [l:dict, l:remaining]\n+  endif\n+  throw maktaba#error#BadValue('Input is not valid JSON text.')\n+endfunction\n+\n+function! s:ParseListPartial(json, custom_values) abort\n+  let l:remaining = s:Consume(a:json, 1)\n+  if l:remaining[0:0] is# ']'\n+    return [[], s:Consume(l:remaining, 1)]\n+  endif\n+  let l:items = []\n+  while !empty(l:remaining)\n+    \" Parse and consume one value as the next list item.\n+    let [l:item, l:remaining] = s:ParsePartial(l:remaining, a:custom_values)\n+    call add(l:items, l:item)\n+    \" If next character is \"]\", consume and finish list.\n+    if l:remaining[0:0] is# ']'\n+      let l:remaining = s:Consume(l:remaining, 1)\n+      break\n+    endif\n+    \" Only other acceptable character is comma. Consume and continue.\n+    if l:remaining[0:0] isnot# ','\n+      throw maktaba#error#BadValue(\n+          \\ 'Junk after JSON array item: %s', s:Ellipsize(l:remaining, 30))\n+    endif\n+    let l:remaining = s:Consume(l:remaining, 1)\n+  endwhile\n+  return [l:items, l:remaining]\n+endfunction\n+\n+function! s:ParseDictPartial(json, custom_values) abort\n+  let l:remaining = s:Consume(a:json, 1)\n+  if l:remaining[0:0] is# '}'\n+    return [[], s:Consume(l:remaining, 1)]\n+  endif\n+  let l:dict = {}\n+  while !empty(l:remaining)\n+    \" Parse and consume one value as the key.\n+    let [l:key, l:remaining] = s:ParsePartial(l:remaining, a:custom_values)\n+    if !maktaba#value#IsString(l:key)\n+      throw maktaba#error#BadValue(\n+          \\ 'Non-string keys not allowed for JSON dicts: %s.', string(l:key))\n+    endif\n+    \" Consume separating \":\".\n+    if l:remaining[0:0] isnot# ':'\n+      throw maktaba#error#BadValue(\n+          \\ 'Junk after JSON key: %s', s:Ellipsize(l:remaining, 30))\n+    endif\n+    let l:remaining = s:Consume(l:remaining, 1)\n+    \" Parse and consume one value as the item value.\n+    let [l:value, l:remaining] = s:ParsePartial(l:remaining, a:custom_values)\n+    let l:dict[l:key] = l:value\n+    unlet l:value\n+\n+    \" If next character is \"}\", consume and finish list.\n+    if l:remaining[0:0] is# '}'\n+      let l:remaining = s:Consume(l:remaining, 1)\n+      break\n+    endif\n+    \" Only other acceptable character is comma. Consume and continue.\n+    if l:remaining[0:0] isnot# ','\n+      throw maktaba#error#BadValue(\n+          \\ 'Junk after JSON object item: %s', s:Ellipsize(l:remaining, 30))\n+    endif\n+    let l:remaining = s:Consume(l:remaining, 1)\n+  endwhile\n+  return [l:dict, l:remaining]\n+endfunction\n+\n+function! s:SetDifference(a, b) abort\n+  let l:difference = []\n+  for l:a_item in a:a\n+    if index(a:b, l:a_item) == -1\n+      call add(l:difference, l:a_item)\n+    endif\n+  endfor\n+  return l:difference\n+endfunction\n+\n+\"\"\n+\" Parses the JSON text {json} to a Vim value. If [custom_values] is passed, it\n+\" is a dictionary mapping JSON primitives (in string form) to custom values to\n+\" use instead of maktaba#json# sentinels. For example: >\n+\"   let value = maktaba#json#Parse('[null]', {'null': ''})\n+\" <\n+\" @throws WrongType if {json} is not a string or [custom_values] is not a dict.\n+\" @throws BadValue if {json} is not a valid JSON text.\n+\" @throws BadValue if [custom_value] keys are invalid JSON primitive names.",
+    "path": "autoload/maktaba/json.vim",
+    "position": null,
+    "original_position": 193,
+    "commit_id": "5a458ed46a1aeae398e7b0c3b00686f7a6f7f8da",
+    "original_commit_id": "7eec0c582b1007d8399374b7d6fa88e79ee411dc",
+    "user": {
+      "login": "malcolmr",
+      "id": 7025783,
+      "avatar_url": "https://avatars.githubusercontent.com/u/7025783?v=3",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/malcolmr",
+      "html_url": "https://github.com/malcolmr",
+      "followers_url": "https://api.github.com/users/malcolmr/followers",
+      "following_url": "https://api.github.com/users/malcolmr/following{/other_user}",
+      "gists_url": "https://api.github.com/users/malcolmr/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/malcolmr/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/malcolmr/subscriptions",
+      "organizations_url": "https://api.github.com/users/malcolmr/orgs",
+      "repos_url": "https://api.github.com/users/malcolmr/repos",
+      "events_url": "https://api.github.com/users/malcolmr/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/malcolmr/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "body": "typo: [custom_values], right? (I assume that's why the function prototype looks odd in the help.)",
+    "created_at": "2015-07-12T10:50:59Z",
+    "updated_at": "2015-07-12T15:28:43Z",
+    "html_url": "https://github.com/google/vim-maktaba/pull/151#discussion_r34420616",
+    "pull_request_url": "https://api.github.com/repos/google/vim-maktaba/pulls/151",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/google/vim-maktaba/pulls/comments/34420616"
+      },
+      "html": {
+        "href": "https://github.com/google/vim-maktaba/pull/151#discussion_r34420616"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/google/vim-maktaba/pulls/151"
+      }
+    }
+  },
+  {
+    "url": "https://api.github.com/repos/google/vim-maktaba/pulls/comments/34422706",
+    "id": 34422706,
+    "diff_hunk": "@@ -0,0 +1,120 @@\n+Maktaba provides some simple functions to parse and format Vim values to JSON\n+texts. These can parse and format numbers, strings, lists and dictionaries to\n+their JSON equivalents.\n+\n+Currently, these functions depend upon access to Python, either via a version\n+of Vim compiled with +python (or +python3), or by shelling out to the Python\n+binary.\n+\n+As always, we start by installing Maktaba.\n+\n+  :set nocompatible\n+  :let g:maktabadir = fnamemodify($VROOMFILE, ':p:h:h')\n+  :let g:bootstrapfile = g:maktabadir . '/bootstrap.vim'\n+  :execute 'source' g:bootstrapfile\n+\n+\n+\n+We can start by formatting a variety of Vim values as JSON. Any Vim value other\n+than a Funcref can be formatted as a JSON text.\n+\n+  :function CheckEqual(a, b) abort\n+  :  return maktaba#ensure#IsEqual(a:b, a:a)\n+  :endfunction\n+\n+  :call CheckEqual(maktaba#json#Format('Hello, world'), '\"Hello, world\"')\n+  :call CheckEqual(maktaba#json#Format(42), '42')\n+  :call CheckEqual(maktaba#json#Format(42.0), '42.0')\n+  :call CheckEqual(maktaba#json#Format([1, 2, 'foo']), '[1, 2, \"foo\"]')\n+  :let g:json = maktaba#json#Format({'foo': {'bar': 'baz'}})\n+  :call CheckEqual('{\"foo\": {\"bar\": \"baz\"}}', g:json)",
+    "path": "vroom/json.vroom",
+    "position": null,
+    "original_position": 30,
+    "commit_id": "5a458ed46a1aeae398e7b0c3b00686f7a6f7f8da",
+    "original_commit_id": "7eec0c582b1007d8399374b7d6fa88e79ee411dc",
+    "user": {
+      "login": "dbarnett",
+      "id": 65244,
+      "avatar_url": "https://avatars.githubusercontent.com/u/65244?v=3",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dbarnett",
+      "html_url": "https://github.com/dbarnett",
+      "followers_url": "https://api.github.com/users/dbarnett/followers",
+      "following_url": "https://api.github.com/users/dbarnett/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dbarnett/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dbarnett/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dbarnett/subscriptions",
+      "organizations_url": "https://api.github.com/users/dbarnett/orgs",
+      "repos_url": "https://api.github.com/users/dbarnett/repos",
+      "events_url": "https://api.github.com/users/dbarnett/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dbarnett/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "body": "Fixed. (Also named them \"actual\" and \"expected\" in CheckEqual so it's slightly more obvious why I flipped the order.)",
+    "created_at": "2015-07-12T15:31:03Z",
+    "updated_at": "2015-07-12T15:31:03Z",
+    "html_url": "https://github.com/google/vim-maktaba/pull/151#discussion_r34422706",
+    "pull_request_url": "https://api.github.com/repos/google/vim-maktaba/pulls/151",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/google/vim-maktaba/pulls/comments/34422706"
+      },
+      "html": {
+        "href": "https://github.com/google/vim-maktaba/pull/151#discussion_r34422706"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/google/vim-maktaba/pulls/151"
+      }
+    }
+  },
+  {
+    "url": "https://api.github.com/repos/google/vim-maktaba/pulls/comments/34422711",
+    "id": 34422711,
+    "diff_hunk": "@@ -0,0 +1,211 @@\n+\" Sentinel constants used to serialize/deserialize JSON primitives.\n+if !exists('maktaba#json#NULL')\n+  let maktaba#json#NULL = {'__json__': 'null'}\n+  let s:NULL = maktaba#json#NULL\n+  let maktaba#json#TRUE = {'__json__': 'true'}\n+  let s:TRUE = maktaba#json#TRUE\n+  let maktaba#json#FALSE = {'__json__': 'false'}\n+  let s:FALSE = maktaba#json#FALSE\n+  lockvar! maktaba#json#NULL maktaba#json#TRUE maktaba#json#FALSE\n+endif\n+\n+function! s:Ellipsize(str, limit) abort\n+  return len(a:str) > a:limit ? a:str[ : a:limit - 4] . '...' : a:str\n+endfunction\n+\n+function! s:FormatKeyAndValue(key, value) abort\n+  if maktaba#value#IsString(a:key)\n+    return printf('\"%s\": %s', a:key, maktaba#json#Format(a:value))\n+  endif\n+  throw maktaba#error#BadValue(\n+      \\ 'Non-string keys not allowed for JSON dicts: %s.', string(a:key))\n+endfunction\n+\n+\"\"\n+\" Formats {value} as a JSON text.\n+\" {value} may be any Vim value other than a Funcref or non-finite Float (or a\n+\" Dictionary or List containing either).\n+\" @throws BadValue if the input cannot be represented as JSON.\n+function! maktaba#json#Format(value) abort\n+  if a:value is s:NULL\n+    return 'null'\n+  elseif a:value is s:TRUE\n+    return 'true'\n+  elseif a:value is s:FALSE\n+    return 'false'\n+  elseif maktaba#value#IsNumeric(a:value)\n+    let l:json = string(a:value)\n+    if index(['nan', 'inf', '-nan', '-inf'], l:json) != -1\n+      throw maktaba#error#BadValue(\n+          \\ 'Value cannot be represented as JSON: %s', l:json)\n+    endif\n+    return l:json\n+  elseif maktaba#value#IsString(a:value)\n+    let l:escaped = substitute(escape(a:value, '\"\\'), \"\\n\", '\\\\n', 'g')\n+    let l:escaped = substitute(l:escaped, \"\\t\", '\\\\t', 'g')\n+    \" TODO(dbarnett): Escape other special characters.\n+    return '\"' . l:escaped . '\"'\n+  elseif maktaba#value#IsList(a:value)\n+    let l:json_items = map(copy(a:value), 'maktaba#json#Format(v:val)')\n+    return '[' . join(l:json_items, ', ') . ']'\n+  elseif maktaba#value#IsDict(a:value)\n+    if maktaba#value#IsCallable(a:value)\n+      throw maktaba#error#BadValue(\n+          \\ 'Funcdict for func %s cannot be represented as JSON.',\n+          \\ string(a:value.func))\n+    endif\n+    let l:json_items =\n+        \\ map(items(a:value), 's:FormatKeyAndValue(v:val[0], v:val[1])')\n+    return '{' . join(l:json_items, ', ') . '}'\n+  endif\n+  throw maktaba#error#BadValue(a:value)\n+endfunction\n+\n+function! s:Consume(str, count) abort\n+  return maktaba#string#StripLeading(a:str[a:count : ])\n+endfunction\n+\n+function! s:ParsePartial(json, custom_values) abort\n+  \" null, true, or false\n+  if a:json =~# '\\m^null\\>'\n+    let l:value = get(a:custom_values, 'null', s:NULL)\n+    return [l:value, s:Consume(a:json, 4)]\n+  endif\n+  if a:json =~# '\\m^true\\>'\n+    let l:value = get(a:custom_values, 'true', s:TRUE)\n+    return [l:value, s:Consume(a:json, 4)]\n+  endif\n+  if a:json =~# '\\m^false\\>'\n+    let l:value = get(a:custom_values, 'false', s:FALSE)\n+    return [l:value, s:Consume(a:json, 5)]\n+  endif\n+  \" Number\n+  \" TODO(dbarnett): Handle scientific notation.\n+  let l:num_match = matchstr(a:json, '\\v^-?[0-9]+(\\.[0-9]+)?>')\n+  if !empty(l:num_match)\n+    return [eval(l:num_match), s:Consume(a:json, len(l:num_match))]\n+  endif\n+  \" String\n+  let l:str_match = matchstr(a:json, '\\v^\"([^\\\\\"]|\\\\.)*\"')\n+  if !empty(l:str_match)\n+    \" JSON strings use the same syntax as JSON strings.\n+    \" TODO(dbarnett): Handle special escape sequences like \\uxxxx.\n+    let l:value = eval(l:str_match)\n+    return [l:value, s:Consume(a:json, len(l:str_match))]\n+  endif\n+  \" First character if any, empty string otherwise.\n+  let l:first_char = a:json[0:0]\n+  \" List\n+  if l:first_char is# '['\n+    let [l:items, l:remaining] = s:ParseListPartial(a:json, a:custom_values)\n+    return [l:items, l:remaining]\n+  endif\n+  \" Dict\n+  if l:first_char is# '{'\n+    let [l:dict, l:remaining] = s:ParseDictPartial(a:json, a:custom_values)\n+    return [l:dict, l:remaining]\n+  endif\n+  throw maktaba#error#BadValue('Input is not valid JSON text.')\n+endfunction\n+\n+function! s:ParseListPartial(json, custom_values) abort\n+  let l:remaining = s:Consume(a:json, 1)\n+  if l:remaining[0:0] is# ']'\n+    return [[], s:Consume(l:remaining, 1)]\n+  endif\n+  let l:items = []\n+  while !empty(l:remaining)\n+    \" Parse and consume one value as the next list item.\n+    let [l:item, l:remaining] = s:ParsePartial(l:remaining, a:custom_values)\n+    call add(l:items, l:item)\n+    \" If next character is \"]\", consume and finish list.\n+    if l:remaining[0:0] is# ']'\n+      let l:remaining = s:Consume(l:remaining, 1)\n+      break\n+    endif\n+    \" Only other acceptable character is comma. Consume and continue.\n+    if l:remaining[0:0] isnot# ','\n+      throw maktaba#error#BadValue(\n+          \\ 'Junk after JSON array item: %s', s:Ellipsize(l:remaining, 30))\n+    endif\n+    let l:remaining = s:Consume(l:remaining, 1)\n+  endwhile\n+  return [l:items, l:remaining]\n+endfunction\n+\n+function! s:ParseDictPartial(json, custom_values) abort\n+  let l:remaining = s:Consume(a:json, 1)\n+  if l:remaining[0:0] is# '}'\n+    return [[], s:Consume(l:remaining, 1)]\n+  endif\n+  let l:dict = {}\n+  while !empty(l:remaining)\n+    \" Parse and consume one value as the key.\n+    let [l:key, l:remaining] = s:ParsePartial(l:remaining, a:custom_values)\n+    if !maktaba#value#IsString(l:key)\n+      throw maktaba#error#BadValue(\n+          \\ 'Non-string keys not allowed for JSON dicts: %s.', string(l:key))\n+    endif\n+    \" Consume separating \":\".\n+    if l:remaining[0:0] isnot# ':'\n+      throw maktaba#error#BadValue(\n+          \\ 'Junk after JSON key: %s', s:Ellipsize(l:remaining, 30))\n+    endif\n+    let l:remaining = s:Consume(l:remaining, 1)\n+    \" Parse and consume one value as the item value.\n+    let [l:value, l:remaining] = s:ParsePartial(l:remaining, a:custom_values)\n+    let l:dict[l:key] = l:value\n+    unlet l:value\n+\n+    \" If next character is \"}\", consume and finish list.\n+    if l:remaining[0:0] is# '}'\n+      let l:remaining = s:Consume(l:remaining, 1)\n+      break\n+    endif\n+    \" Only other acceptable character is comma. Consume and continue.\n+    if l:remaining[0:0] isnot# ','\n+      throw maktaba#error#BadValue(\n+          \\ 'Junk after JSON object item: %s', s:Ellipsize(l:remaining, 30))\n+    endif\n+    let l:remaining = s:Consume(l:remaining, 1)\n+  endwhile\n+  return [l:dict, l:remaining]\n+endfunction\n+\n+function! s:SetDifference(a, b) abort\n+  let l:difference = []\n+  for l:a_item in a:a\n+    if index(a:b, l:a_item) == -1\n+      call add(l:difference, l:a_item)\n+    endif\n+  endfor\n+  return l:difference\n+endfunction\n+\n+\"\"\n+\" Parses the JSON text {json} to a Vim value. If [custom_values] is passed, it\n+\" is a dictionary mapping JSON primitives (in string form) to custom values to\n+\" use instead of maktaba#json# sentinels. For example: >\n+\"   let value = maktaba#json#Parse('[null]', {'null': ''})\n+\" <\n+\" @throws WrongType if {json} is not a string or [custom_values] is not a dict.\n+\" @throws BadValue if {json} is not a valid JSON text.\n+\" @throws BadValue if [custom_value] keys are invalid JSON primitive names.",
+    "path": "autoload/maktaba/json.vim",
+    "position": null,
+    "original_position": 193,
+    "commit_id": "5a458ed46a1aeae398e7b0c3b00686f7a6f7f8da",
+    "original_commit_id": "7eec0c582b1007d8399374b7d6fa88e79ee411dc",
+    "user": {
+      "login": "dbarnett",
+      "id": 65244,
+      "avatar_url": "https://avatars.githubusercontent.com/u/65244?v=3",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dbarnett",
+      "html_url": "https://github.com/dbarnett",
+      "followers_url": "https://api.github.com/users/dbarnett/followers",
+      "following_url": "https://api.github.com/users/dbarnett/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dbarnett/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dbarnett/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dbarnett/subscriptions",
+      "organizations_url": "https://api.github.com/users/dbarnett/orgs",
+      "repos_url": "https://api.github.com/users/dbarnett/repos",
+      "events_url": "https://api.github.com/users/dbarnett/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dbarnett/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "body": "Fixed.",
+    "created_at": "2015-07-12T15:31:28Z",
+    "updated_at": "2015-07-12T15:31:28Z",
+    "html_url": "https://github.com/google/vim-maktaba/pull/151#discussion_r34422711",
+    "pull_request_url": "https://api.github.com/repos/google/vim-maktaba/pulls/151",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/google/vim-maktaba/pulls/comments/34422711"
+      },
+      "html": {
+        "href": "https://github.com/google/vim-maktaba/pull/151#discussion_r34422711"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/google/vim-maktaba/pulls/151"
+      }
+    }
+  }
+]

@@ -1,0 +1,28 @@
+*codereview.txt*	Plugin for managing local/remote branches and pull reqs
+Google                                                            *codereview*
+
+==============================================================================
+CONTENTS                                                 *codereview-contents*
+  1. Configuration.........................................|codereview-config|
+  2. Commands............................................|codereview-commands|
+
+==============================================================================
+CONFIGURATION                                              *codereview-config*
+
+This plugin uses maktaba flags for configuration. Install Glaive
+(https://github.com/google/glaive) and use the |:Glaive| command to configure
+them.
+
+                                                 *codereview:plugin[commands]*
+Configures whether plugin/commands.vim should be loaded.
+Default: 1 `
+
+==============================================================================
+COMMANDS                                                 *codereview-commands*
+
+:CodeReview {remote}                                             *:CodeReview*
+  View pull requests / pending changes between local and {remote}. Currently
+  only supports github specs of the form "github:user/repo".
+
+
+vim:tw=78:ts=8:ft=help:norl:
