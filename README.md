@@ -1,3 +1,5 @@
+[![Travis Build Status](https://travis-ci.org/google/vim-codereview.svg?branch=master)](https://travis-ci.org/google/vim-codereview)
+
 codereview is a plugin for interfacing with ongoing code reviews.
 
 In this initial release, it only supports GitHub and only supports listing open
